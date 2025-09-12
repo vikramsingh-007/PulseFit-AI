@@ -1,3 +1,4 @@
+const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
 const ApiError = require("../utils/ApiError");
 
@@ -15,13 +16,16 @@ async function registerUser(userData) {
   } catch (error) {
     if (error.code === 11000) {
       // Handle race condition if two requests register same email simultaneously
-      throw new ApiError(400, "Email already exists");
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Email already exists");
     }
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((e) => e.message);
-      throw new ApiError(400, "Validation failed", errors);
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Validation failed", errors);
     }
-    throw new ApiError(500, "Error creating user");
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Error creating user"
+    );
   }
 }
 

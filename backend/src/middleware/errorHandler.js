@@ -1,15 +1,15 @@
-const errorHandler = (err, req, res, next) => {
-  let statusCode = err.statusCode || 500;
-  let message = err.message || "Internal Server Error";
+const { StatusCodes } = require("http-status-codes");
+const sendResponse = require("../utils/response");
 
-  if (statusCode === 500) {
+const errorHandler = (err, req, res, next) => {
+  let statusCode = err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
+  let message = err.message || "Internal Server Error";
+  let errors = err.errors || [];
+
+  if (statusCode === StatusCodes.INSUFFICIENT_STORAGE) {
     console.error("Unexpected Error: ", err);
   }
-  return res.status(statusCode).json({
-    success: false,
-    message,
-    errors: err.errors || [],
-  });
+  sendResponse(res, statusCode, message, null, errors);
 };
 
 module.exports = errorHandler;

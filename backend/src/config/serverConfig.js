@@ -4,5 +4,5 @@ dotenv.config();
 
 module.exports = {
   PORT: process.env.PORT,
-  SALT_ROUNDS: process.env.BCRYPT_SALT_ROUNDS,
+  SALT_ROUNDS: Number(process.env.BCRYPT_SALT_ROUNDS) || 10,
 };
