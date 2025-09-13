@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const morgan = require("morgan");
 
 const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { PORT } = require("./config/serverConfig");
 const connectDB = require("./config/dbConfig");
@@ -40,6 +41,7 @@ const startServer = async () => {
       res.send("API Running");
     });
     app.use("/api/users", userRoutes);
+    app.use("/api/auth", authRoutes);
 
     app.use(errorHandler);
 
