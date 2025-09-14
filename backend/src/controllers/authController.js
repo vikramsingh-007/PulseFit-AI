@@ -9,6 +9,7 @@ const {
 } = require("../utils/tokenUtil");
 const RefreshToken = require("../models/RefreshToken");
 const sendResponse = require("../utils/response");
+const { expression } = require("joi");
 
 const login = async (req, res, next) => {
   try {
@@ -60,7 +61,7 @@ const login = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    const refreshTokenRaw = req.cookies.refreshToken;
+    const refreshTokenRaw = req.cookies?.refreshToken;
     if (!refreshTokenRaw) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, "Refresh token missing");
     }
@@ -120,4 +121,30 @@ const refresh = async (req, res, next) => {
   }
 };
 
-module.exports = { login, refresh };
+const logout = async (req, res, next) => {
+  try {
+    const refreshTokenRaw = req.cookies?.refreshToken;
+    if (refreshTokenRaw) {
+      const refreshTokenHash = hashToken(refreshTokenRaw);
+      await RefreshToken.updateOne(
+        {
+          tokenHash: refreshTokenHash,
+          revoked: false,
+          expiresAt: { $gt: new Date() },
+        },
+        { revoked: true }
+      );
+    }
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+    return sendResponse(res, StatusCodes.OK, "Logged out");
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, refresh, logout };
