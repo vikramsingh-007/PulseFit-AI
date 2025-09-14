@@ -58,4 +58,66 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { login };
+const refresh = async (req, res, next) => {
+  try {
+    const refreshTokenRaw = req.cookies.refreshToken;
+    if (!refreshTokenRaw) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "Refresh token missing");
+    }
+
+    const refreshTokenHash = hashToken(refreshTokenRaw);
+    const storedToken = await RefreshToken.findOne({
+      tokenHash: refreshTokenHash,
+      revoked: false,
+      expiresAt: { $gt: new Date() },
+    });
+    if (!storedToken) {
+      throw new ApiError(
+        StatusCodes.UNAUTHORIZED,
+        "Invalid or expired refresh token"
+      );
+    }
+
+    const user = await User.findById(storedToken.user);
+    if (!user) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, "User no longer exists");
+    }
+
+    storedToken.revoked = true;
+    await storedToken.save();
+
+    const newAccessToken = createAccessToken(user);
+    const newRefreshTokenRaw = generateRefreshTokenRaw();
+    const newRefreshTokenhash = hashToken(newRefreshTokenRaw);
+
+    const expiresAt = new Date();
+    const REFRESH_TOKEN_EXPIRES_DAYS = parseInt(
+      process.env.REFRESH_TOKEN_EXPIRES_DAYS || 3
+    );
+    expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRES_DAYS);
+
+    await RefreshToken.create({
+      tokenHash: newRefreshTokenhash,
+      user: user._id,
+      ip: req.ip,
+      userAgent: req.get("User-Agent"),
+      expiresAt,
+    });
+
+    res.cookie("refreshToken", refreshTokenRaw, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: expiresAt - Date.now(),
+    });
+
+    sendResponse(res, StatusCodes.OK, "Token refresh successfully", {
+      accessToken: newAccessToken,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, refresh };
