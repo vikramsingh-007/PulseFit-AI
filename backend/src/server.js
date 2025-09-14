@@ -10,6 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { PORT } = require("./config/serverConfig");
 const connectDB = require("./config/dbConfig");
+const ensureAuthenticated = require("./middleware/ensureAuthenticated");
 
 const startServer = async () => {
   try {
@@ -37,7 +38,7 @@ const startServer = async () => {
 
     app.use(limiter);
 
-    app.get("/", (req, res) => {
+    app.get("/", ensureAuthenticated, (req, res) => {
       res.send("API Running");
     });
     app.use("/api/users", userRoutes);

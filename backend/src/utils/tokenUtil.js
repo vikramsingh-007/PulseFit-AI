@@ -38,7 +38,10 @@ function createAccessToken(user) {
 function verifyAccessToken(token) {
   try {
     const key = PUBLIC_KEY || process.env.JWT_SECRET;
-    return jwt.verify(token, key);
+    return jwt.verify(token, key, {
+      issuer: "pulsefit-ai-api",
+      audience: "pulsefit-ai-client",
+    });
   } catch (error) {
     throw new ApiError(
       StatusCodes.UNAUTHORIZED,
