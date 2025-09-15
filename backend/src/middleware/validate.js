@@ -1,3 +1,4 @@
+const { StatusCodes } = require("http-status-codes");
 const ApiError = require("../utils/ApiError");
 
 function validate(schema) {
@@ -6,7 +7,9 @@ function validate(schema) {
 
     if (error) {
       const errors = error.details.map((err) => err.message);
-      return next(new ApiError(400, "Validation failed", errors));
+      return next(
+        new ApiError(StatusCodes.BAD_REQUEST, "Validation failed", errors)
+      );
     }
     req.body = value;
     next();
